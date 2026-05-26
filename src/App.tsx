@@ -180,7 +180,7 @@ const LESSONS = {
 
 const SPEEDS = { slow:1200, medium:600, fast:150 };
 
-function getBoxColor(lessonKey, step, i) {
+function getBoxColor(lessonKey :string, step : any , i:number) {
   if (lessonKey === "Binary Search") {
     if (step.found === i) return { bg:"#E1F5EE", border:"#1D9E75", text:"#085041", bold:true };
     if (step.eliminated?.includes(i)) return { bg:"#f4f4f4", border:"transparent", text:"#bbb", bold:false, dim:true };
@@ -189,7 +189,7 @@ function getBoxColor(lessonKey, step, i) {
     return { bg:"var(--color-background-secondary)", border:"var(--color-border-secondary)", text:"var(--color-text-secondary)", bold:false, dim:true };
   }
   if (lessonKey === "Bubble Sort") {
-    const arr = step.arr || LESSONS["Bubble Sort"].array;
+    //const arr = step.arr || LESSONS["Bubble Sort"].array;
     if (step.sorted?.includes(i)) return { bg:"#E1F5EE", border:"#1D9E75", text:"#085041", bold:true };
     if (step.comparing?.includes(i)) return { bg:step.swapped?"#FCEBEB":"#FAEEDA", border:step.swapped?"#E24B4A":"#EF9F27", text:step.swapped?"#791F1F":"#633806", bold:true };
     return { bg:"#EEEDFE", border:"#AFA9EC", text:"#3C3489", bold:false };
@@ -203,7 +203,7 @@ function getBoxColor(lessonKey, step, i) {
   return { bg:"var(--color-background-secondary)", border:"var(--color-border-secondary)", text:"var(--color-text-secondary)", bold:false };
 }
 
-function getPointers(lessonKey, step, i) {
+function getPointers(lessonKey :string, step : any , i:number) {
   const ptrs = [];
   if (lessonKey === "Binary Search") {
     if (i === step.lo && step.lo !== undefined) ptrs.push({ label:"lo", color:"#378ADD" });
@@ -228,37 +228,44 @@ export default function ArrayVisualEngine() {
   const [idx, setIdx]             = useState(0);
   const [running, setRunning]     = useState(false);
   const [speed, setSpeed]         = useState("medium");
-  const timerRef                  = useRef(null);
+  const timerRef                  = useRef<number | null>(null);
   const idxRef                    = useRef(0);
 
-  const lesson = LESSONS[lessonKey];
+const lesson = LESSONS[lessonKey as keyof typeof LESSONS];
   const steps  = lesson.steps;
   const cur    = steps[idx];
 
-  const reset = useCallback(() => {
-    clearInterval(timerRef.current);
-    setRunning(false); setIdx(0); idxRef.current = 0;
+  const reset = useCallback(() => { if (timerRef.current) clearInterval(timerRef.current);
+     setRunning(false); 
+    setIdx(0); 
+    idxRef.current = 0;
   }, []);
 
   useEffect(() => { reset(); }, [lessonKey, reset]);
-  useEffect(() => () => clearInterval(timerRef.current), []);
-
+ useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+  
   const advance = useCallback(() => {
     const next = idxRef.current + 1;
-    if (next >= steps.length) { clearInterval(timerRef.current); setRunning(false); return false; }
+    if (next >= steps.length) {  if (timerRef.current) clearInterval(timerRef.current);  setRunning(false); return false; }
     idxRef.current = next; setIdx(next);
     return next < steps.length - 1;
   }, [steps]);
 
   const startAuto = useCallback(() => {
     setRunning(true);
-    timerRef.current = setInterval(() => {
+    timerRef.current = window.setInterval(() => {
       const more = advance();
-      if (!more) { clearInterval(timerRef.current); setRunning(false); }
-    }, SPEEDS[speed]);
+       if (!more && timerRef.current) { 
+        clearInterval(timerRef.current); setRunning(false); }
+    }, SPEEDS[speed as keyof typeof SPEEDS]);
   }, [advance, speed]);
 
-  const pause = () => { clearInterval(timerRef.current); setRunning(false); };
+  const pause = () => {    if (timerRef.current) clearInterval(timerRef.current); 
+ setRunning(false); };
 
   const prev = () => {
     if (idx > 0 && !running) { idxRef.current = idx-1; setIdx(idx-1); }
@@ -266,9 +273,7 @@ export default function ArrayVisualEngine() {
 
   // get current display array
   const displayArray = lessonKey === "Bubble Sort"
-    ? (cur.arr || lesson.array)
-    : lesson.array;
-
+    ? ((cur as any).arr || lesson.array): lesson.array;
   const progress = Math.round(idx / (steps.length - 1) * 100);
 
   return (
@@ -317,7 +322,7 @@ export default function ArrayVisualEngine() {
 
         {/* Pointer labels row */}
         <div style={{ display:"flex", gap:6, marginBottom:6, paddingBottom:2 }}>
-          {displayArray.map((_, i) => {
+          {displayArray.map((_: any, i: number) => {
             const ptrs = getPointers(lessonKey, cur, i);
             return (
               <div key={i} style={{ flex:1, minWidth:44, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
@@ -336,7 +341,7 @@ export default function ArrayVisualEngine() {
 
         {/* Boxes */}
         <div style={{ display:"flex", gap:6 }}>
-          {displayArray.map((val, i) => {
+          {displayArray.map((val:any, i:number) => {
             const c = getBoxColor(lessonKey, cur, i);
             return (
               <div key={i} style={{ flex:1, minWidth:44, height:52, display:"flex", alignItems:"center",
@@ -355,7 +360,7 @@ export default function ArrayVisualEngine() {
 
         {/* Index labels */}
         <div style={{ display:"flex", gap:6, marginTop:5 }}>
-          {displayArray.map((_, i) => (
+          {displayArray.map((_: any, i: number) => (
             <div key={i} style={{ flex:1, minWidth:44, textAlign:"center", fontSize:10, color:"var(--color-text-secondary)" }}>
               {i}
             </div>
